@@ -340,26 +340,30 @@ class _EpubViewState extends State<EpubView> {
           builders.chapterDividerBuilder(chapters[chapterIndex]),
         Html(
           data: paragraphs[index].element.outerHtml,
-          onLinkTap: (href, _, __, ___) => onExternalLinkPressed(href!),
+          onLinkTap: (href, _, __) => onExternalLinkPressed(href!),
           style: {
             'html': Style(
-              padding: options.paragraphPadding as EdgeInsets?,
+              padding: (options.paragraphPadding as EdgeInsets)?.htmlPadding,
             ).merge(Style.fromTextStyle(options.textStyle)),
           },
-          customRenders: {
-            tagMatcher('img'):
-                CustomRender.widget(widget: (context, buildChildren) {
-              final url = context.tree.element!.attributes['src']!
-                  .replaceAll('../', '');
-              return Image(
-                image: MemoryImage(
-                  Uint8List.fromList(
-                    document.Content!.Images![url]!.Content!,
-                  ),
-                ),
-              );
+          extensions: [
+            TagExtension(
+                tagsToExtend: {'img'},
+            builder: (extensionContext) {
+               final url = extensionContext.attributes['src']!.replaceAll('../', '');
+               final url_with_prefix = "OEBPS/" + url;
+               if (document.Content!.Images!.containsKey(url_with_prefix))
+               {
+                 return Image(image: MemoryImage(Uint8List.fromList(document.Content!.Images![url_with_prefix]!.Content!)));
+               }
+               else if (document.Content!.Images!.containsKey(url))
+               {
+                 return Image(image: MemoryImage(Uint8List.fromList(document.Content!.Images![url]!.Content!)));
+               }
+
+               return Text("Image not find: ${url}");
             }),
-          },
+          ],
         ),
       ],
     );
